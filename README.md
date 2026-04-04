@@ -1,109 +1,224 @@
-# ShieldGrid
-### AI-Powered Parametric Income Protection for India's Delivery Heroes
+# ShieldGrid 🛡️
+### AI-Powered Parametric Income Protection for India's Delivery Workers
+
+> Zero-touch claims. Automated payouts. No forms. No calls.
 
 ---
 
-## 🚀 Interactive Demo Guide (For the Panel)
+## How It Works
 
-The ShieldGrid prototype is now fully integrated. To demonstrate the end-to-end flow, follow these steps:
+ShieldGrid operates as a fully automated parametric insurance platform. The entire flow from registration to payout requires **zero manual intervention**.
 
-### 1. Onboarding (Live Data Entry)
-When you first open the app (`http://localhost:8081`), you will be greeted by the **Registration Screen**. Enter a name, a mock Worker ID (e.g., `SWG-BLR-001`), and a UPI ID. This instantly creates your profile in the **PostgreSQL** database via the NestJS API.
-
-### 2. Hyperlocal Risk (Live ML Inference)
-On the Dashboard, tap **"Refresh Risk"**. This triggers a real-time call to the **FastAPI ML Oracle**, which runs an **XGBoost model** to calculate your dynamic premium based on simulated weather and traffic density for your zone.
-
-### 3. The Disruption (Automated Payout)
-Tap the red **"Trigger Storm"** button. This simulates a 80mm rainfall event. 
-- **Validation**: The system checks if **Location Tracking** is ON (toggle it in the top header).
-- **Oracle**: The ML service validates your "presence" using an **Isolation Forest** fraud model.
-- **Payout**: Upon success, a **Razorpay UPI payout** is simulated, and your policy status flips to **INACTIVE** (Claim Processed).
-
-### 4. Audit Log (Live Database Poll)
-Switch to the **History Tab**. You will see your payout record appear automatically, proving the full transactional loop from ML detection to database persistence.
-
-> [!TIP]
-> Use the **"Reset Demonstration"** button in the **Profile** tab to wipe the database and local session if you want to perform a fresh demo for another judge!
-
----
-
-## 🛠️ Quick Start (Local Setup)
-
-To run the full integrated stack, you need four terminals active in the root directory:
-
-1. **Infrastructure**: `docker-compose up -d` (Starts Postgres & Redis)
-2. **Transactional API**: `cd backend/api && npm run start:dev` (NestJS)
-3. **ML Oracle**: `cd backend/ml && uvicorn main:app --port 8000` (FastAPI)
-4. **Mobile/Web Frontend**: `npx expo start --web` (React Native)
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     SHIELDGRID ARCHITECTURE                     │
+│                                                                 │
+│  📱 Mobile App (React Native / Expo)                            │
+│  ├── Registration → Policy Issuance → Dashboard → Claims        │
+│       │                                                         │
+│       ▼                                                         │
+│  🔗 NestJS API (Port 3000) — Transactional Layer                │
+│  ├── User Onboarding   → PostgreSQL                             │
+│  ├── Policy Management → PostgreSQL                             │
+│  ├── Payout Processing → Razorpay (Simulated)                   │
+│       │                                                         │
+│       ▼                                                         │
+│  🧠 FastAPI ML Oracle (Port 8000) — Intelligence Layer          │
+│  ├── XGBoost Risk Model  → Dynamic Weekly Premium               │
+│  ├── Isolation Forest    → GPS Fraud Detection                  │
+│  └── Trigger Oracle      → Monitors 5 Disruption Channels       │
+│       │                                                         │
+│       ▼                                                         │
+│  🐘 PostgreSQL (Port 5433) + ⚡ Redis (Port 6379)               │
+│     via Docker                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-# Inspiration
-Every monsoon season in India, millions of delivery partners log off their apps and stare at a flooded street — not because they're scared, but because two-wheelers simply cannot move through knee-deep water. That lost shift isn't recoverable. There's no overtime to make up for it, no leave encashment, no safety net. It's just gone.
-We started thinking about this problem from a very grounded place: gig workers are the infrastructure of India's food economy, yet they're the most financially exposed people in it. A single severe cloudburst can wipe out two to three days of earnings for a delivery partner in Mumbai or Chennai. When you're living paycheck to paycheck on weekly platform disbursements, that's not a bad week — it's a crisis.
-Traditional insurance was never designed for this. Indemnity-based products demand receipts, claim forms, assessor visits, and weeks of processing — a process that costs more to run than the payout itself on a low-value gig claim. We didn't want to digitize that broken model. We wanted to throw it out entirely.
-Parametric insurance — where a payout is triggered by a verifiable external event rather than a subjective damage assessment — felt like the missing piece. It's already used for agricultural crop failures and catastrophe bonds at an institutional level. We asked: why can't a delivery partner in Bengaluru have the same protection the moment IMD declares a red alert in their pincode?
-That question became ShieldGrid.
+## The End-to-End Flow
 
-What It Does
-ShieldGrid is a parametric income protection platform built specifically for food delivery partners on platforms like Zomato and Swiggy. It removes every friction point that has historically made micro-insurance unviable for gig workers.
-Here's the core loop:
-A delivery partner registers on the mobile app, links their UPI ID, and grants background location access. Every Sunday, our AI risk engine looks at hyperlocal weather forecasts and historical disruption data for their usual operating pincodes and quotes a weekly micro-premium — starting at ₹15 for clear weeks, scaling up to ₹30 during peak monsoon risk windows. The worker opts in, the premium is deducted from their platform wallet, and coverage is live.
-When a disruption event hits — say, rainfall exceeds 50mm/hour in their zone, or a Section 144 curfew grounds traffic — the system doesn't wait for anyone to file a claim. It checks whether the worker was actively logged into their delivery app and physically present in the affected geofence at the time of the trigger. If both conditions are met, the income replacement payout goes straight to their UPI account. Zero forms. Zero calls. Zero waiting.
-What ShieldGrid covers:
+### 1. 📋 Registration
+A delivery worker opens the app and fills in:
+- **Full Name** and **Worker ID**
+- **UPI ID** — where payouts land instantly
+- **Delivery Platform** — Zomato, Swiggy, Blinkit, Dunzo, or Zepto
+- **Operating Zone** — selects their primary delivery area
 
-Severe weather events: localized rainfall above 50mm/hr, heatwaves above 45°C
-Civic disruptions: verified Section 144 impositions, traffic velocity drops above 80% caused by blockades
+> **AI in Action**: As soon as a zone is selected, the app calls the ML Oracle (`/evaluate-zone-risk`) which runs the **XGBoost model** on historical rain data, traffic velocity, and zone density for that specific area. The weekly premium is displayed in real-time — workers in historically safer zones like Whitefield get a **₹2 discount** automatically.
 
-What it deliberately doesn't cover:
+---
 
-Health, life, or accident damages — those require different regulatory frameworks and underwriting logic, and including them would dilute the product's precision
+### 2. 📄 Policy Issuance
+On submit, the app:
+1. Creates the worker profile in **PostgreSQL** via the NestJS API
+2. Issues a **LIVE Weekly Policy** with the ML-calculated premium
+3. Stores the session locally for seamless re-entry
 
-The platform has two interfaces: a mobile app for delivery workers handling onboarding, policy status, and payout history; and a web dashboard for insurer admins showing live coverage maps, trigger logs, and loss-ratio analytics.
+The **Dashboard** then shows:
+- Policy status: **LIVE** (green) or **INACTIVE** (claim processed)
+- Weekly premium with XGBoost multiplier breakdown
+- Real-time **Risk Environment** meter for their zone
 
-How We Built It
-We treated this as an end-to-end product problem, not just a coding exercise. That shaped every technical decision we made.
-Frontend: The worker-facing product is a React Native + Expo mobile app. Delivery partners don't carry laptops — their phone is their entire workstation. Background location tracking, which is essential for validating physical presence during a disruption event, only works reliably on native mobile. The admin dashboard is a React web app with real-time data visualization for insurer-side analytics.
-Backend: We split the backend into two distinct services. A Node.js (NestJS) service handles user state, wallet ledgers, weekly policy issuance, and payout orchestration. A Python (FastAPI) microservice hosts the ML layer — running inference from our risk and fraud models without coupling it to the transactional backend. The two services communicate over internal REST.
-The Trigger Oracle: This is the heartbeat of the system — a cron-driven Python service that continuously polls the OpenWeatherMap API and Mapbox Traffic API, evaluates active parametric conditions against all live policies, and fires trigger events when thresholds are crossed. When a trigger fires, it passes the event to the validation pipeline before any payout is initiated.
-AI/ML Layer:
+---
 
-Risk Modeling: A Gradient Boosting Regressor (XGBoost) trained on historical IMD weather data and localized traffic disruption records. It predicts the probability of a disruption event in a specific 5km hexagonal grid for the upcoming week, which directly drives the weekly premium calculation.
-Dynamic Pricing: An inference pipeline that takes the risk model's output and maps it to a weekly premium multiplier. The formula is: Weekly Premium = Base Premium × Risk Multiplier × Zone Density Factor.
-Fraud Detection: Isolation Forests for spatial-temporal anomaly detection. The model flags cases where GPS pings show physically impossible traversal speeds (indicating spoofing), or where multiple claim triggers originate from a single device ID across geographically distant zones simultaneously.
+### 3. 💡 Dynamic Premium Calculation
 
-Data & Infrastructure: PostgreSQL for relational data (user records, policy ledgers, payout history), Redis for high-speed location caching and rate limiting on the trigger oracle's API calls. The entire stack is containerized with Docker and deployed on AWS (EC2 + RDS). GitHub Actions handles CI/CD.
-Integrations for the Prototype:
+The ML Oracle (`/evaluate-zone-risk`) computes premium as:
 
-Live: OpenWeatherMap free tier for real-time precipitation and temperature
-Live: Mapbox Traffic API for road velocity monitoring
-Simulated: Delivery platform APIs mocked via internal endpoints (representing worker login state and earnings history — these aren't publicly available)
-Simulated: Razorpay Test Mode for the instant UPI payout flow
+```
+Weekly Premium = Base (₹15) × Risk Multiplier − Zone Safety Discount
 
+Where Risk Multiplier = XGBoost(zone_density, historical_rain_mm, avg_traffic_velocity)
+```
 
-Challenges We Ran Into
-The "last-mile validation" problem was harder than we expected. Triggering a payout based on weather data is straightforward. Confirming that a specific worker was actually in the affected zone at the moment of disruption — and not gaming the system from a different location — required us to think carefully about what "presence" actually means in a parametric context. We landed on a combination of background GPS polling cached in Redis and cross-referencing platform login state via mock API, but the edge cases kept coming: what if a worker's phone lost signal during a flood? What if the GPS poll interval missed the exact trigger window? We're still refining the validation logic.
-Getting the premium model to be simultaneously affordable and actuarially solvent was non-trivial. At ₹15/week base, we needed to be very precise about loss probability estimates. Too aggressive with the risk multiplier and workers stop buying in. Too conservative and the payout pool drains. We iterated through several versions of the XGBoost model's feature set before the loss ratio projections stabilized at a sustainable level in our simulations.
-Regulatory awareness without regulatory authority. Parametric insurance in India sits in an interesting regulatory space under IRDAI. We're not an insurer — we're building the technology layer. Positioning ShieldGrid as a white-labeled infrastructure product that an IRDAI-licensed insurer deploys was a deliberate product design choice, not an afterthought. But working through what that actually means for data ownership, KYC flow, and policy issuance required several rethinks of the architecture.
-Simulating delivery platform APIs without real access. Zomato and Swiggy don't expose public APIs for partner login state or earnings. We built a comprehensive internal mock layer that represents this data realistically, but we're acutely aware that production integration would require platform partnerships. This is a real dependency that we've flagged explicitly in our roadmap.
+| Zone | Risk Multiplier | Discount | Final Premium |
+|---|---|---|---|
+| Koramangala, BLR | 1.2x | ₹0 | ₹18 |
+| Whitefield, BLR | 0.9x | ₹2 | ₹11.50 |
+| Indiranagar, BLR | 1.3x | ₹0 | ₹19.50 |
+| HSR Layout, BLR | 1.0x | ₹1 | ₹14 |
 
-Accomplishments That We're Proud Of
-Honestly, the thing we're most proud of isn't any single feature — it's the fact that the core loop actually works end-to-end in the prototype. A delivery partner can onboard, receive a dynamic weekly premium quote, activate coverage, watch the trigger oracle detect a simulated rainfall threshold breach in their zone, see the validation pipeline confirm their presence, and receive a Razorpay test-mode UPI credit — all without touching a single claim form.
-That end-to-end flow being functional, even on simulated data, validated the core hypothesis: parametric micro-insurance for gig workers is technically feasible, and the zero-touch claims experience is achievable.
-We're also proud of the fraud detection layer being substantive rather than theatrical. Isolation Forests running on real spatial-temporal features — not just a checkbox. The model correctly flags GPS-spoofed test cases we deliberately injected during development.
-And we're proud of how we scoped the product. Choosing not to cover health or accident claims wasn't a limitation — it was a product decision. Staying precise about what parametric insurance can actually guarantee, without overpromising, is something we feel strongly about.
+---
 
-What We Learned
-We came in thinking this was primarily a machine learning problem. We were wrong — it's primarily a product design problem that happens to have ML inside it.
-The hardest questions weren't about model accuracy. They were: What counts as a valid trigger event? Who bears the basis risk when a worker in an unaffected street loses income during a citywide curfew? How do you build trust with a user demographic that has historically been underserved and skeptical of financial products?
-We learned that parametric insurance's greatest strength — its objectivity — is also its greatest UX challenge. Workers need to understand exactly what triggers their payout and what doesn't, with zero ambiguity. If the system rejects a claim because the worker's GPS wasn't polling during the trigger window, that rejection needs to feel fair, not arbitrary. Designing for that transparency was harder than building the model itself.
-We also learned a lot about the actual operational realities of gig work in India — the weekly payout cycle, the reliance on platform wallets, the distrust of deductions that aren't immediately understandable. All of that shaped the premium model and the onboarding UX in ways we didn't anticipate at the start.
+### 4. 🚨 5 Automated Disruption Triggers
 
-What's Next for ShieldGrid
-The immediate next step is getting the ML models off synthetic training data and onto real IMD historical weather records at the pincode level, combined with actual Mapbox traffic disruption logs. The model's predictive accuracy is only as good as its training distribution, and right now that's simulated.
-Beyond that, three things matter most:
-Platform partnerships. The single biggest unlock for ShieldGrid is a data-sharing agreement with one delivery platform — even a limited pilot. Worker login state and earnings data would replace the mock API layer and make the validation pipeline production-grade.
-IRDAI-aligned product structuring. We want to work with a licensed non-life insurer to structure ShieldGrid as a Group Parametric Policy administered by the platform for its delivery partners. This is the cleanest regulatory path and the fastest route to scale.
-Expanding the trigger set. Severe weather and civic curfews are the obvious starting points, but the parametric model can extend to other verifiable disruptions — air quality index events, waterlogging scores from municipal sensors, or even platform-declared zone suspensions. Each new trigger type expands coverage relevance without increasing the claims processing burden.
-The long-term vision is a white-labeled API that delivery aggregators can embed directly into their partner apps — so a Swiggy delivery partner in Hyderabad gets ShieldGrid coverage as a native feature of the platform, not a separate product they have to discover and install.
-rm, not a separate product they have to discover and install.
+The **Trigger Oracle** polls 5 independent data channels every 10 seconds:
+
+| # | Trigger | Data Source | Threshold | Payout |
+|---|---|---|---|---|
+| 1 | 🌧️ **RAINFALL** | OpenWeatherMap API | >50mm/hr | ₹800 |
+| 2 | 🌡️ **HEATWAVE** | IMD Temperature API | >45°C | ₹600 |
+| 3 | 🚗 **TRAFFIC_JAM** | Mapbox Traffic API | <5 km/h avg velocity | ₹500 |
+| 4 | 💨 **AQI_HAZARD** | CPCB Air Quality Index | AQI >300 | ₹400 |
+| 5 | 🚫 **CIVIC_CURFEW** | Govt Alert API (Mock) | Section 144 declared | ₹1000 |
+
+When a threshold is crossed, the Oracle fires a trigger to the NestJS API automatically.
+
+---
+
+### 5. ✅ Zero-Touch Claim Process
+
+```
+Disruption Detected
+       │
+       ▼
+Isolation Forest Fraud Check (GPS Ping Validation)
+       │
+       ├── FRAUD? → Reject. Log anomaly.
+       │
+       └── VALID? → Process Payout
+                       │
+                       ▼
+               Razorpay UPI Transfer
+                       │
+                       ▼
+               Claims Tab Updated (auto-refresh every 5s)
+                       │
+                       ▼
+               Worker receives ₹ — Zero forms. Zero calls.
+```
+
+The worker sees the payout appear in their **Claims** tab automatically with:
+- Trigger type and icon
+- Payout amount
+- Immutable transaction ID
+- Timestamp and coverage week
+
+---
+
+## 🛠️ How to Run Locally
+
+You need **Docker**, **Node.js 18+**, **Python 3.10+**, and the **Expo CLI**.
+
+### Step 1 — Clone the repository
+```bash
+git clone https://github.com/AP-0528/Shieldgrid.git
+cd Shieldgrid
+git checkout integration-final
+```
+
+### Step 2 — Start Infrastructure (Database + Cache)
+```bash
+docker-compose up -d
+```
+This starts **PostgreSQL** on port 5433 and **Redis** on port 6379.
+
+### Step 3 — Start the Transactional API (NestJS)
+```bash
+cd backend/api
+npm install
+npm run start:dev
+```
+API will be live at `http://localhost:3000`
+
+### Step 4 — Start the ML Oracle (FastAPI)
+```bash
+cd backend/ml
+python -m venv venv
+.\venv\Scripts\activate        # Windows
+# source venv/bin/activate     # Mac/Linux
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+ML API will be live at `http://localhost:8000`
+
+### Step 5 — Start the Frontend (Expo)
+```bash
+# From project root
+npx expo start --web
+```
+Open `http://localhost:8081` in your browser.
+
+---
+
+## 🔄 Demo Reset (Between Judges)
+
+To wipe all data and start fresh:
+1. Go to the **Profile** screen (person icon, top-left on dashboard)
+2. Tap **"Reset Demonstration"** at the bottom
+3. The app returns to the registration screen; the database is wiped
+
+Or via terminal:
+```bash
+docker-compose down -v && docker-compose up -d
+```
+
+---
+
+## 🧪 API Reference
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/users/onboard` | Register a new worker |
+| POST | `/policy/issue` | Issue a LIVE policy (calls ML Oracle) |
+| POST | `/payouts/trigger` | Fire a disruption event (Oracle → NestJS) |
+| GET | `/payouts/:userId` | Get all payouts for a user |
+| POST | `/demo/reset` | Wipe all data for a fresh demo |
+| POST | `ML:8000/evaluate-zone-risk` | Zone-aware premium calculation |
+| GET | `ML:8000/trigger-types` | List all 5 covered disruption types |
+| POST | `ML:8000/verify-presence` | Isolation Forest fraud validation |
+
+---
+
+## 🏗️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Mobile / Web App | React Native + Expo Router |
+| Transactional API | NestJS + TypeORM |
+| ML Oracle | FastAPI + XGBoost + Scikit-learn |
+| Database | PostgreSQL (via Docker) |
+| Cache / Rate-limit | Redis (via Docker) |
+| Payout Integration | Razorpay (Test Mode, Simulated) |
+| Containerization | Docker Compose |
+
+---
+
+## Inspiration
+
+Every monsoon season in India, millions of delivery partners stare at a flooded street — not because they're scared, but because two-wheelers simply cannot move through knee-deep water. That lost shift isn't recoverable. There's no overtime, no leave, no safety net. It's just gone.
+
+ShieldGrid was built to fix that. Parametric insurance — where a payout triggers automatically from a verifiable external event instead of a claim form — is the missing piece for gig worker protection. A delivery partner in Bengaluru should have the same protection as a farmer in Maharashtra the moment the IMD declares a red alert in their pincode.
+
+**ShieldGrid makes that real.**
