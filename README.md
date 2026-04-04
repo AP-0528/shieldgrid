@@ -1,9 +1,44 @@
-ShieldGrid
+# ShieldGrid
+### AI-Powered Parametric Income Protection for India's Delivery Heroes
 
-AI-Powered Parametric Income Protection for India's Delivery Heroes
+---
 
+## 🚀 Interactive Demo Guide (For the Panel)
 
-Inspiration
+The ShieldGrid prototype is now fully integrated. To demonstrate the end-to-end flow, follow these steps:
+
+### 1. Onboarding (Live Data Entry)
+When you first open the app (`http://localhost:8081`), you will be greeted by the **Registration Screen**. Enter a name, a mock Worker ID (e.g., `SWG-BLR-001`), and a UPI ID. This instantly creates your profile in the **PostgreSQL** database via the NestJS API.
+
+### 2. Hyperlocal Risk (Live ML Inference)
+On the Dashboard, tap **"Refresh Risk"**. This triggers a real-time call to the **FastAPI ML Oracle**, which runs an **XGBoost model** to calculate your dynamic premium based on simulated weather and traffic density for your zone.
+
+### 3. The Disruption (Automated Payout)
+Tap the red **"Trigger Storm"** button. This simulates a 80mm rainfall event. 
+- **Validation**: The system checks if **Location Tracking** is ON (toggle it in the top header).
+- **Oracle**: The ML service validates your "presence" using an **Isolation Forest** fraud model.
+- **Payout**: Upon success, a **Razorpay UPI payout** is simulated, and your policy status flips to **INACTIVE** (Claim Processed).
+
+### 4. Audit Log (Live Database Poll)
+Switch to the **History Tab**. You will see your payout record appear automatically, proving the full transactional loop from ML detection to database persistence.
+
+> [!TIP]
+> Use the **"Reset Demonstration"** button in the **Profile** tab to wipe the database and local session if you want to perform a fresh demo for another judge!
+
+---
+
+## 🛠️ Quick Start (Local Setup)
+
+To run the full integrated stack, you need four terminals active in the root directory:
+
+1. **Infrastructure**: `docker-compose up -d` (Starts Postgres & Redis)
+2. **Transactional API**: `cd backend/api && npm run start:dev` (NestJS)
+3. **ML Oracle**: `cd backend/ml && uvicorn main:app --port 8000` (FastAPI)
+4. **Mobile/Web Frontend**: `npx expo start --web` (React Native)
+
+---
+
+# Inspiration
 Every monsoon season in India, millions of delivery partners log off their apps and stare at a flooded street — not because they're scared, but because two-wheelers simply cannot move through knee-deep water. That lost shift isn't recoverable. There's no overtime to make up for it, no leave encashment, no safety net. It's just gone.
 We started thinking about this problem from a very grounded place: gig workers are the infrastructure of India's food economy, yet they're the most financially exposed people in it. A single severe cloudburst can wipe out two to three days of earnings for a delivery partner in Mumbai or Chennai. When you're living paycheck to paycheck on weekly platform disbursements, that's not a bad week — it's a crisis.
 Traditional insurance was never designed for this. Indemnity-based products demand receipts, claim forms, assessor visits, and weeks of processing — a process that costs more to run than the payout itself on a low-value gig claim. We didn't want to digitize that broken model. We wanted to throw it out entirely.
@@ -71,3 +106,4 @@ Platform partnerships. The single biggest unlock for ShieldGrid is a data-sharin
 IRDAI-aligned product structuring. We want to work with a licensed non-life insurer to structure ShieldGrid as a Group Parametric Policy administered by the platform for its delivery partners. This is the cleanest regulatory path and the fastest route to scale.
 Expanding the trigger set. Severe weather and civic curfews are the obvious starting points, but the parametric model can extend to other verifiable disruptions — air quality index events, waterlogging scores from municipal sensors, or even platform-declared zone suspensions. Each new trigger type expands coverage relevance without increasing the claims processing burden.
 The long-term vision is a white-labeled API that delivery aggregators can embed directly into their partner apps — so a Swiggy delivery partner in Hyderabad gets ShieldGrid coverage as a native feature of the platform, not a separate product they have to discover and install.
+rm, not a separate product they have to discover and install.
