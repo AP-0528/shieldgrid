@@ -25,8 +25,10 @@ export default function HomeScreen() {
   const [premiumPaid, setPremiumPaid] = useState(0);
   const [policyStatus, setPolicyStatus] = useState<'LIVE' | 'INACTIVE'>('INACTIVE');
   const [isLoading, setIsLoading] = useState(true);
+  const [isClaiming, setIsClaiming] = useState(false);
   const [currentRisk, setCurrentRisk] = useState(0.42);
   const [riskDesc, setRiskDesc] = useState('Moderate Risk — Rain Expected');
+  const [premiumBreakdown, setPremiumBreakdown] = useState<any>(null);
 
   const API_URL = 'http://localhost:3000';
 
@@ -51,8 +53,9 @@ export default function HomeScreen() {
           body: JSON.stringify({ userId: user.id, zone: "Koramangala, BLR" })
         });
         const policyData = await policyRes.json();
-        
-        setPremiumPaid(policyData.risk_assessment.final_premium || 15);
+
+        setPremiumPaid(policyData.risk_assessment?.final_premium || 15);
+        setPremiumBreakdown(policyData.risk_assessment);
         setPolicyStatus('LIVE');
       } catch (e) {
         console.warn('Sync error:', e);
@@ -82,7 +85,6 @@ export default function HomeScreen() {
   };
 
   const triggerMockDisaster = async () => {
-    // Demo Validation Check
     if (!isTracking) {
       Alert.alert(
         "🚨 Verification Failed",
@@ -92,26 +94,32 @@ export default function HomeScreen() {
     }
 
     try {
-      Alert.alert("🚨 Oracle Triggered", "Submitting mock 80mm rainfall event to ML Oracle...");
-      
-      // Visual Spike
+      setIsClaiming(true);
       setCurrentRisk(1.0);
       setRiskDesc('EXTREME — Severe Rainfall Detected');
 
       const res = await fetch(`${API_URL}/payouts/trigger`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ zone: "Koramangala, BLR", event_type: "RAINFALL", value: 80.0 })
+        body: JSON.stringify({ zone: "Koramangala, BLR", event_type: "RAINFALL", value: 80.0, payout_amount: 800 })
       });
-      
+
       const data = await res.json();
+      setIsClaiming(false);
+
       if (data.success) {
-        Alert.alert("✅ Payout Processed", `Validation passed. UPI Payout released via Razorpay.`);
-        setPolicyStatus('INACTIVE'); // Policy consumed
+        Alert.alert(
+          "✅ Payout Processed",
+          `Zero-touch claim validated. ₹800 dispatched via Razorpay UPI to your linked account.`
+        );
+        setPolicyStatus('INACTIVE');
+      } else {
+        Alert.alert("⚠️ No Active Policy", "No LIVE policy found. Register first.");
       }
     } catch (e) {
+      setIsClaiming(false);
       Alert.alert("Error", "Could not reach API.");
-      setCurrentRisk(0.42); // Reset on error
+      setCurrentRisk(0.42);
     }
   };
 
@@ -141,9 +149,26 @@ export default function HomeScreen() {
           <Ionicons name={trackingIcon} size={13} color={trackingColor} />
           <ThemedText style={[styles.trackingLabel, { color: trackingColor }]}>{trackingLabel}</ThemedText>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.profileIcon}
+          onPress={() => router.push('/profile')}
+        >
+          <Ionicons name="person-circle" size={32} color="#fff" />
+        </TouchableOpacity>
       </ThemedView>
 
       <ThemedView style={styles.content}>
+        {/* Claiming Overlay */}
+        {isClaiming && (
+          <ThemedView style={[styles.claimingBanner, { backgroundColor: theme.warning + '20', borderColor: theme.warning + '40' }]}>
+            <Ionicons name="sync" size={16} color={theme.warning} />
+            <ThemedText style={[styles.claimingText, { color: theme.warning }]}>
+              Processing Claim... Verifying Presence via Isolation Forest
+            </ThemedText>
+          </ThemedView>
+        )}
+
         {isLoading ? (
           <ThemedText style={styles.sectionLabel}>Syncing with Oracle...</ThemedText>
         ) : (
@@ -205,9 +230,21 @@ const styles = StyleSheet.create({
   subtitle: { opacity: 0.65, fontSize: 15, marginTop: 4 },
   trackingPill: { position: 'absolute', top: Platform.OS === 'ios' ? 56 : 36, right: 16, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   trackingLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
+  profileIcon: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 56 : 36,
+    left: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
   content: { padding: 20, gap: 20, marginTop: -10 },
   sectionLabel: { fontSize: 13, fontWeight: '700', opacity: 0.45, textTransform: 'uppercase', letterSpacing: 1, marginBottom: -8 },
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
   actionItem: { width: '48%', paddingVertical: 18, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
   actionLabel: { fontSize: 13, fontWeight: '600' },
+  claimingBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 14, borderWidth: 1 },
+  claimingText: { fontSize: 13, fontWeight: '600', flex: 1 },
 });

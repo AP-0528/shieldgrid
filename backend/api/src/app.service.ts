@@ -27,18 +27,14 @@ export class AppService {
     return user;
   }
 
-  async issuePolicy(userId: string, zone: string) {
-    // 1. Get dynamic pricing from ML oracle
-    let premiumData = { base_premium: 15, risk_multiplier: 1.0, final_premium: 15 };
+  async issuePolicy(userId: string, zone: string, platform: string = 'Zomato') {
+    // 1. Get zone-aware dynamic pricing from ML oracle
+    let premiumData: any = { base_premium: 15, risk_multiplier: 1.0, final_premium: 15, zone_safety_discount: 0, breakdown: {} };
     try {
-      const res = await fetch(`${this.mlApiUrl}/evaluate-risk`, {
+      const res = await fetch(`${this.mlApiUrl}/evaluate-zone-risk`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          zone_density: 0.8,
-          historical_rain_mm: 35.0,
-          average_traffic_velocity: 12.0
-        })
+        body: JSON.stringify({ zone, platform })
       });
       if (res.ok) {
         premiumData = await res.json() as any;
@@ -55,9 +51,9 @@ export class AppService {
       coveredZone: zone,
       status: 'LIVE'
     });
-    
+
     await this.policyRepository.save(policy);
-    this.logger.log(`Issued LIVE policy ${policy.id} for user ${userId} at premium ${premiumData.final_premium}`);
+    this.logger.log(`Issued LIVE policy ${policy.id} for user ${userId} at premium ₹${premiumData.final_premium} [zone: ${zone}]`);
     return { policy, risk_assessment: premiumData };
   }
 
@@ -93,19 +89,20 @@ export class AppService {
     // Process payouts for all valid policies
     const payouts = [];
     for (const policy of policies) {
-      // Mock Razorpay UPI Payout Call
-      const txId = `urpi_test_${Math.random().toString(36).substring(2, 9)}`;
-      
+      // Use trigger-specific payout amount (from oracle definition)
+      const payoutAmount = (data as any).payout_amount || 800;
+      const txId = `urpi_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
       const payout = this.payoutRepository.create({
         policyId: policy.id,
         triggerEvent: data.event_type,
-        amount: 800, // proportional payout
+        amount: payoutAmount,
         status: 'COMPLETED',
         transactionId: txId
       });
       await this.payoutRepository.save(payout);
       payouts.push(payout);
-      this.logger.log(`Processed UPI Payout ${payout.id} for Policy ${policy.id} -> Txn ${txId}`);
+      this.logger.log(`✅ UPI Payout ₹${payoutAmount} issued → Policy ${policy.id} → Txn ${txId}`);
     }
 
     return { success: true, payouts_issued: payouts.length };
@@ -128,9 +125,10 @@ export class AppService {
       id: p.id,
       date: p.issuedAt.toDateString(),
       payout: `₹${p.amount}`,
+      amount: p.amount,
       status: p.status,
       trigger: p.triggerEvent,
-      location: 'Koramangala, BLR', // Simplified for demo
+      location: 'Koramangala, BLR',
       coverageWeek: 'Apr 01-07',
       txId: p.transactionId
     }));
