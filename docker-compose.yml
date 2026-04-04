@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: shieldgrid-postgres
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_USER: shieldgrid_user
+      POSTGRES_PASSWORD: shieldgrid_password
+      POSTGRES_DB: shieldgrid
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shieldgrid_user -d shieldgrid"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: shieldgrid-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # We will map our API and ML services here once fully built.
+  # For local development, we'll run them directly on the host targeting these DBs,
+  # but this compose file serves as the unified infrastructure definition.
+
+volumes:
+  postgres_data:
+  redis_data:
